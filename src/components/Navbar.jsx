@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-
+import logo from './cashcompass_logo.PNG'
 function Navbar({ user, setUser }) {
 
   function logOut() {
@@ -10,6 +10,7 @@ function Navbar({ user, setUser }) {
   return (
     <nav>
 
+    <img src={logo} alt='Cash Compass Logo' className='logo' />
       {/* routes everyone can see */}
       <Link className='nav-item' to='/'>
         Homepage
@@ -30,6 +31,12 @@ function Navbar({ user, setUser }) {
             Transactions
           </Link>
 
+
+          <Link className='nav-item' to='/invoice'>
+            Invoice
+          </Link>
+
+          
           {/* username */}
           <span className='nav-item'>
             {user.username}

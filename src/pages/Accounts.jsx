@@ -32,6 +32,16 @@ function Accounts() {
   const handleSubmit = async (event) => {
     event.preventDefault()
 
+    if (
+    !name ||
+    !balance ||
+    !category ||
+    !notes
+  ) {
+    alert('Please fill in all fields')
+    return
+  }
+
     const account = {
       name,
       accountType,

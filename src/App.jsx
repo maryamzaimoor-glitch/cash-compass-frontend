@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router'
 
+
 import Homepage from './pages/Homepage'
 import SignUp from './pages/Signup'
 import SignIn from './pages/SignIn'
@@ -8,6 +9,7 @@ import Navbar from './components/Navbar'
 import Dashboard from './pages/Dashboard'
 import Accounts from './pages/Accounts'
 import Transactions from './pages/Transactions'
+import Invoice from './pages/Invoice'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -53,11 +55,19 @@ function App() {
           element={user ? <Accounts /> : <Navigate to='/sign-in' />}
         />
 
+        <Route 
+        path='/invoice' 
+        element={<Invoice />} 
+      />
+
+
         <Route
           path='/transactions'
           element={user ? <Transactions /> : <Navigate to='/sign-in' />}
         />
       </Routes>
+
+    
     </div>
   )
 }

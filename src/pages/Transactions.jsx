@@ -4,12 +4,12 @@ import api from '../services/api'
 function Transactions() {
   const [transactions, setTransactions] = useState([])
   const [editingTransactionId, setEditingTransactionId] = useState(null)
-
   const [title, setTitle] = useState('')
   const [amount, setAmount] = useState('')
   const [type, setType] = useState('expense')
   const [accountType, setAccountType] = useState('personal')
   const [category, setCategory] = useState('')
+  const [date, setDate] = useState('')
 
   useEffect(() => {
     getTransactions()
@@ -26,18 +26,28 @@ function Transactions() {
     setType('expense')
     setAccountType('personal')
     setCategory('')
+    setDate('')
     setEditingTransactionId(null)
   }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-
+    if (
+    !title ||
+    !amount ||
+    !category ||
+    !date
+  ) {
+    alert('Please fill in all fields')
+    return
+  }
     const transaction = {
       title,
       amount,
       type,
       accountType,
-      category
+      category,
+      date
     }
 
     if (editingTransactionId) {
@@ -56,6 +66,7 @@ function Transactions() {
     setType(transaction.type)
     setAccountType(transaction.accountType)
     setCategory(transaction.category)
+    setDate(transaction.date?.slice(0, 10))
     setEditingTransactionId(transaction._id)
   }
 
@@ -64,44 +75,73 @@ function Transactions() {
     getTransactions()
   }
 
-  return (
-    <main>
-      <h1>Transactions</h1>
+return (
+  <main>
+    <h1>Transactions</h1>
 
-      <form onSubmit={handleSubmit}>
-        <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder='Title' />
+    <form onSubmit={handleSubmit}>
+      <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder='Title' />
 
-        <input value={amount} onChange={(event) => setAmount(event.target.value)} placeholder='Amount' />
+      <input value={amount} onChange={(event) => setAmount(event.target.value)} placeholder='Amount' />
 
-        <select value={type} onChange={(event) => setType(event.target.value)}>
-          <option value='expense'>Expense</option>
-          <option value='income'>Income</option>
-        </select>
+      <select value={type} onChange={(event) => setType(event.target.value)}>
+        <option value='expense'>Expense</option>
+        <option value='income'>Income</option>
+      </select>
 
-        <select value={accountType} onChange={(event) => setAccountType(event.target.value)}>
-          <option value='personal'>Personal</option>
-          <option value='business'>Business</option>
-        </select>
+      <select value={accountType} onChange={(event) => setAccountType(event.target.value)}>
+        <option value='personal'>Personal</option>
+        <option value='business'>Business</option>
+      </select>
 
-        <input value={category} onChange={(event) => setCategory(event.target.value)} placeholder='Category' />
+      <input value={category} onChange={(event) => setCategory(event.target.value)} placeholder='Category' />
 
-        <button>{editingTransactionId ? 'Update' : 'Add'}</button>
-      </form>
+      <input type='date' value={date} onChange={(event) => setDate(event.target.value)} />
 
-      {transactions.map((transaction) => (
-        <div key={transaction._id}>
-          <h3>{transaction.title}</h3>
-          <p>BD {transaction.amount}</p>
-          <p>{transaction.type}</p>
-          <p>{transaction.accountType}</p>
-          <p>{transaction.category}</p>
+      <button>{editingTransactionId ? 'Update' : 'Add'}</button>
+    </form>
 
-          <button onClick={() => editTransaction(transaction)}>Edit</button>
-          <button onClick={() => deleteTransaction(transaction._id)}>Delete</button>
-        </div>
-      ))}
-    </main>
-  )
+    <div className='transactions-row'>
+      <section>
+        <h2>Personal Transactions</h2>
+
+        {transactions
+          .filter((transaction) => transaction.accountType === 'personal')
+          .map((transaction) => (
+            <div key={transaction._id}>
+              <h3>{transaction.title}</h3>
+              <p>BD {transaction.amount}</p>
+              <p>{transaction.type}</p>
+              <p>{transaction.category}</p>
+              <p>{transaction.date?.slice(0, 10)}</p>
+
+              <button onClick={() => editTransaction(transaction)}>Edit</button>
+              <button onClick={() => deleteTransaction(transaction._id)}>Delete</button>
+            </div>
+          ))}
+      </section>
+
+      <section>
+        <h2>Business Transactions</h2>
+
+        {transactions
+          .filter((transaction) => transaction.accountType === 'business')
+          .map((transaction) => (
+            <div key={transaction._id}>
+              <h3>{transaction.title}</h3>
+              <p>BD {transaction.amount}</p>
+              <p>{transaction.type}</p>
+              <p>{transaction.category}</p>
+              <p>{transaction.date?.slice(0, 10)}</p>
+
+              <button onClick={() => editTransaction(transaction)}>Edit</button>
+              <button onClick={() => deleteTransaction(transaction._id)}>Delete</button>
+            </div>
+          ))}
+      </section>
+    </div>
+  </main>
+)
 }
 
 export default Transactions

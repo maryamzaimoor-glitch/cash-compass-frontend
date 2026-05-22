@@ -14,45 +14,38 @@ import {
 function Dashboard({ user }) {
   const [accounts, setAccounts] = useState([])
   const [transactions, setTransactions] = useState([])
+  const [selectedMonth, setSelectedMonth] = useState('')
 
-useEffect(() => {
-  getDashboardData()
-}, [])
+  useEffect(() => {
+    getDashboardData()
+  }, [])
 
-const getDashboardData = async () => {
-  try {
-    const accountsResponse = await api.get('/accounts')
-    const transactionsResponse = await api.get('/transactions')
+  const getDashboardData = async () => {
+    try {
+      const accountsResponse = await api.get('/accounts')
+      const transactionsResponse = await api.get('/transactions')
 
-    setAccounts(accountsResponse.data)
-    setTransactions(transactionsResponse.data)
-  } catch (err) {
-    console.log(err)
+      setAccounts(accountsResponse.data)
+      setTransactions(transactionsResponse.data)
+    } catch (err) {
+      console.log(err)
+    }
   }
-}
+
+  const filteredTransactions = selectedMonth
+    ? transactions.filter((transaction) => transaction.date?.slice(0, 7) === selectedMonth)
+    : transactions
 
   const personalAccounts = accounts.filter((account) => account.accountType === 'personal')
   const businessAccounts = accounts.filter((account) => account.accountType === 'business')
 
   const getBalance = (accountList) => {
-    return accountList.reduce((total, account) => {
-      return total + Number(account.balance)
-    }, 0)
+    return accountList.reduce((total, account) => total + Number(account.balance), 0)
   }
 
-  const getIncome = (type) => {
-    return transactions.reduce((total, transaction) => {
-      if (transaction.accountType === type && transaction.type === 'income') {
-        return total + Number(transaction.amount)
-      }
-
-      return total
-    }, 0)
-  }
-
-  const getExpenses = (type) => {
-    return transactions.reduce((total, transaction) => {
-      if (transaction.accountType === type && transaction.type === 'expense') {
+  const getTotal = (accountType, transactionType) => {
+    return filteredTransactions.reduce((total, transaction) => {
+      if (transaction.accountType === accountType && transaction.type === transactionType) {
         return total + Number(transaction.amount)
       }
 
@@ -63,57 +56,33 @@ const getDashboardData = async () => {
   const personalBalance = getBalance(personalAccounts)
   const businessBalance = getBalance(businessAccounts)
 
-  const personalIncome = getIncome('personal')
-  const businessIncome = getIncome('business')
+  const personalIncome = getTotal('personal', 'income')
+  const businessIncome = getTotal('business', 'income')
 
-  const personalExpenses = getExpenses('personal')
-  const businessExpenses = getExpenses('business')
+  const personalExpenses = getTotal('personal', 'expense')
+  const businessExpenses = getTotal('business', 'expense')
 
   const totalBalance = personalBalance + businessBalance
   const totalIncome = personalIncome + businessIncome
   const totalExpenses = personalExpenses + businessExpenses
 
-  const personalChart = [
-    {
-      name: 'Personal',
-      income: personalIncome,
-      expenses: personalExpenses
-    }
-  ]
+  const personalChart = [{ name: 'Personal', income: personalIncome, expenses: personalExpenses }]
+  const businessChart = [{ name: 'Business', income: businessIncome, expenses: businessExpenses }]
+  const combinedChart = [{ name: 'Combined', income: totalIncome, expenses: totalExpenses }]
 
-  const businessChart = [
-    {
-      name: 'Business',
-      income: businessIncome,
-      expenses: businessExpenses
-    }
-  ]
+  const getSpending = (accountType) => {
+    return filteredTransactions
+      .filter((transaction) => transaction.accountType === accountType && transaction.type === 'expense')
+      .map((transaction) => {
+        return {
+          name: transaction.category,
+          value: Number(transaction.amount)
+        }
+      })
+  }
 
-  const combinedChart = [
-    {
-      name: 'Combined',
-      income: totalIncome,
-      expenses: totalExpenses
-    }
-  ]
-
-  const personalSpending = transactions
-    .filter((transaction) => transaction.accountType === 'personal' && transaction.type === 'expense')
-    .map((transaction) => {
-      return {
-        name: transaction.category,
-        value: Number(transaction.amount)
-      }
-    })
-
-  const businessSpending = transactions
-    .filter((transaction) => transaction.accountType === 'business' && transaction.type === 'expense')
-    .map((transaction) => {
-      return {
-        name: transaction.category,
-        value: Number(transaction.amount)
-      }
-    })
+  const personalSpending = getSpending('personal')
+  const businessSpending = getSpending('business')
 
   return (
     <main>
@@ -122,83 +91,97 @@ const getDashboardData = async () => {
       <h2>Cash Compass Dashboard</h2>
       <p>Here is a quick look at your money.</p>
 
-      <section>
-        <h2>Personal Overview</h2>
+      <div className='dashboard-filter'>
+        <input
+          type='month'
+          value={selectedMonth}
+          onChange={(event) => setSelectedMonth(event.target.value)}
+        />
 
-        <p>Balance: BD {personalBalance}</p>
-        <p>Income: BD {personalIncome}</p>
-        <p>Expenses: BD {personalExpenses}</p>
+        <button onClick={() => setSelectedMonth('')}>
+          Show All
+        </button>
+      </div>
 
-        <BarChart width={350} height={250} data={personalChart}>
-          <XAxis dataKey='name' />
-          <YAxis />
-          <Tooltip />
-          <Bar dataKey='income' />
-          <Bar dataKey='expenses' />
-        </BarChart>
+      <div className='charts-row'>
+        <section>
+          <h2>Personal Overview</h2>
 
-        <h3>Personal Spending Categories</h3>
+          <p>Balance: BD {personalBalance}</p>
+          <p>Income: BD {personalIncome}</p>
+          <p>Expenses: BD {personalExpenses}</p>
 
-        {personalSpending.length > 0 ? (
-          <PieChart width={300} height={250}>
-            <Pie
-              data={personalSpending}
-              dataKey='value'
-              nameKey='name'
-              cx='50%'
-              cy='50%'
-              outerRadius={80}
-              label
-            >
-              {personalSpending.map((entry, index) => (
-                <Cell key={index} />
-              ))}
-            </Pie>
+          <BarChart width={500} height={340} data={personalChart}>
+            <XAxis dataKey='name' />
+            <YAxis />
             <Tooltip />
-          </PieChart>
-        ) : (
-          <p>No personal expenses yet.</p>
-        )}
-      </section>
+            <Bar dataKey='income' />
+            <Bar dataKey='expenses' />
+          </BarChart>
 
-      <section>
-        <h2>Business Overview</h2>
+          <h3>Personal Spending Categories</h3>
 
-        <p>Balance: BD {businessBalance}</p>
-        <p>Income: BD {businessIncome}</p>
-        <p>Expenses: BD {businessExpenses}</p>
+          {personalSpending.length > 0 ? (
+            <PieChart width={450} height={350}>
+              <Pie
+                data={personalSpending}
+                dataKey='value'
+                nameKey='name'
+                cx='50%'
+                cy='50%'
+                outerRadius={120}
+                label
+              >
+                {personalSpending.map((entry, index) => (
+                  <Cell key={index} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          ) : (
+            <p>No personal expenses yet.</p>
+          )}
+        </section>
 
-        <BarChart width={350} height={250} data={businessChart}>
-          <XAxis dataKey='name' />
-          <YAxis />
-          <Tooltip />
-          <Bar dataKey='income' />
-          <Bar dataKey='expenses' />
-        </BarChart>
+        <section>
+          <h2>Business Overview</h2>
 
-        <h3>Business Spending Categories</h3>
+          <p>Balance: BD {businessBalance}</p>
+          <p>Income: BD {businessIncome}</p>
+          <p>Expenses: BD {businessExpenses}</p>
 
-        {businessSpending.length > 0 ? (
-          <PieChart width={300} height={250}>
-            <Pie
-              data={businessSpending}
-              dataKey='value'
-              nameKey='name'
-              cx='50%'
-              cy='50%'
-              outerRadius={80}
-              label
-            >
-              {businessSpending.map((entry, index) => (
-                <Cell key={index} />
-              ))}
-            </Pie>
+          <BarChart width={500} height={340} data={businessChart}>
+            <XAxis dataKey='name' />
+            <YAxis />
             <Tooltip />
-          </PieChart>
-        ) : (
-          <p>No business expenses yet.</p>
-        )}
-      </section>
+            <Bar dataKey='income' />
+            <Bar dataKey='expenses' />
+          </BarChart>
+
+          <h3>Business Spending Categories</h3>
+
+          {businessSpending.length > 0 ? (
+            <PieChart width={450} height={350}>
+              <Pie
+                data={businessSpending}
+                dataKey='value'
+                nameKey='name'
+                cx='50%'
+                cy='50%'
+                outerRadius={120}
+                label
+              >
+                {businessSpending.map((entry, index) => (
+                  <Cell key={index} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          ) : (
+            <p>No business expenses yet.</p>
+          )}
+        </section>
+      </div>
 
       <section>
         <h2>Combined Overview</h2>
@@ -207,7 +190,7 @@ const getDashboardData = async () => {
         <p>Total Income: BD {totalIncome}</p>
         <p>Total Expenses: BD {totalExpenses}</p>
 
-        <BarChart width={350} height={250} data={combinedChart}>
+        <BarChart width={500} height={340} data={combinedChart}>
           <XAxis dataKey='name' />
           <YAxis />
           <Tooltip />
